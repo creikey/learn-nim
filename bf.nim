@@ -1,7 +1,8 @@
 import os
 import std/tables
 
-if not (os.commandLineParams().len() == 1 or os.commandLineParams().len() == 2):
+let params = os.commandLineParams()
+if params.len() < 1 or params.len() > 2:
     echo "Usage: bf.nim [brainfuck program file] [optional input to program file]"
     quit(system.QuitFailure)
 
@@ -19,10 +20,10 @@ proc getText(fileName: string): string =
         quit(system.QuitFailure)
         
 
-let text = getText(os.commandLineParams()[0])
+let text = getText(params[0])
 var inputText: string = ""
-if os.commandLineParams().len() == 2:
-    inputText = getText(os.commandLineParams()[1])
+if params.len() == 2:
+    inputText = getText(params[1])
 
 var rightMemory: seq[uint8] = @[0'u8]
 var leftMemory: seq[uint8] = @[] # for negative memory pointer
@@ -30,14 +31,11 @@ var instructionIndex = 0
 var inputIndex = 0
 var memoryIndex = 0
 
-proc getMemAddr(index: int): ptr uint8 =
-    if index >= 0:
-        result = addr(rightMemory[index])
-    else:
-        result = addr(leftMemory[-1 * index - 1])
-
 proc curMem(): ptr uint8 =
-    getMemAddr(memoryIndex)
+    if memoryIndex >= 0:
+        result = addr(rightMemory[memoryIndex])
+    else:
+        result = addr(leftMemory[-1 * memoryIndex - 1])
 
 proc fixMemory(): void =
     while memoryIndex >= 0 and memoryIndex >= rightMemory.len():
@@ -86,11 +84,9 @@ while instructionIndex < text.len():
     elif cur == '[':
         if curMem()[] == 0:
             instructionIndex = openBraceMap[instructionIndex]
-            # continue
     elif cur == ']':
         if curMem()[] != 0:
             instructionIndex = closeBraceMap[instructionIndex]
-            # continue
     
     steps += 1
     instructionIndex += 1
